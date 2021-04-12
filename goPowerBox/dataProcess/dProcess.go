@@ -35,18 +35,33 @@ var JsonData map[string]interface{}
 // Local
 //
 func (o *OperType) conf(i uint8) {
-	temp := i
 
-	o.con1 = temp & 1
+	if o.con1 = 0; i&1 != 0 {
+		o.con1 = 1
+	}
+	if o.con2 = 0; i&2 != 0 {
+		o.con2 = 1
+	}
+	if o.usb1 = 0; i&4 != 0 {
+		o.usb1 = 1
+	}
+	if o.usb2 = 0; i&8 != 0 {
+		o.usb2 = 1
+	}
+	/*
+		temp := i
 
-	temp >>= 1
-	o.con2 = i & 1
+		o.con1 = temp & 1
 
-	temp >>= 1
-	o.usb1 = i & 1
+		temp >>= 1
+		o.con2 = temp & 1
 
-	temp >>= 1
-	o.usb2 = i & 1
+		temp >>= 1
+		o.usb1 = temp & 1
+
+		temp >>= 1
+		o.usb2 = temp & 1
+	*/
 }
 
 func makeControlData(id int, s string) []byte {
@@ -67,7 +82,7 @@ func makeControlData(id int, s string) []byte {
 	return ctrmsg
 }
 
-func makeJsonData(fptr *RxedMessage, b []byte) {
+func parseJsonData(fptr *RxedMessage, b []byte) {
 	if b != nil {
 		err := json.Unmarshal(b, &JsonData)
 		if err != nil {
@@ -111,6 +126,20 @@ func makeJsonData(fptr *RxedMessage, b []byte) {
 	}
 }
 
+func parseFixedData(fptr *RxedMessage, data []byte, id int) {
+	if data == nil {
+		return
+	}
+	fptr.model = int(data[0])
+	fptr.site = int(binary.LittleEndian.Uint16(data[1:3]))
+	fptr.id = id
+	fptr.group = int(data[3])
+	fptr.oper.conf(uint8(data[8]))
+	fptr.DevSt = int(data[9])
+	fptr.BrOv = int(data[10])
+	fptr.MsgT = int(data[11])
+}
+
 //
 // Global
 //
@@ -152,22 +181,18 @@ func DataProcessing(data []byte, command chan string) int {
 
 	//fmt.Println("fptr.ctr ", fptr.ctr)
 
-	fptr.model = int(data[0])
-	fptr.site = int(binary.LittleEndian.Uint16(data[1:3]))
-	fptr.id = id
-	fptr.group = int(data[3])
-	fptr.oper.conf(uint8(data[8]))
-	fptr.DevSt = int(data[9])
-	fptr.BrOv = int(data[10])
-	fptr.MsgT = int(data[11])
+	// parse fixed part data
+	parseFixedData(fptr, data, id)
 
+	// parse json data
 	if msgLen := int(binary.LittleEndian.Uint16(data[12:14])); msgLen != 0 {
-		makeJsonData(fptr, data[14:])
+		parseJsonData(fptr, data[14:])
 	} else {
-		makeJsonData(fptr, nil)
+		parseJsonData(fptr, nil)
 	}
 
-	fmt.Println("Devices:", len(IdIndex), *fptr)
+	//fmt.Println("Devices:", len(IdIndex), *fptr)
+	fmt.Println(*fptr)
 	return id
 }
 
@@ -185,7 +210,7 @@ func GetconnRespData(data []byte, id int) []byte {
 	return data[0:14]
 }
 
-func Init_dProcess() {
+func init() {
 	IdIndex = make(map[int]*RxedMessage)
 	JsonData = make(map[string]interface{})
 }

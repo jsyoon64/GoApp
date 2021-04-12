@@ -8,8 +8,7 @@ import (
 )
 
 func main() {
-
-	oper.Init_dProcess()
+	//oper.Init_dProcess()
 	input := make(chan string, 10)
 
 	l, err := net.Listen("tcp", ":3000")
