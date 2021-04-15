@@ -89,9 +89,13 @@ func parseJsonData(fptr *RxedMessage, b []byte) {
 			dd := string(b)
 			fmt.Println(dd, err)
 		} else {
-			fptr.c1v = JsonData["CON1"].(map[string]interface{})["V"].(float64)
-			fptr.c1i = JsonData["CON1"].(map[string]interface{})["I"].(float64)
-
+			if con, ok := JsonData["CON1"]; ok {
+				fptr.c1v = con.(map[string]interface{})["V"].(float64)
+				fptr.c1i = con.(map[string]interface{})["I"].(float64)
+			} else {
+				fptr.c1v = nil
+				fptr.c1i = nil
+			}
 			if con, ok := JsonData["CON2"]; ok {
 				fptr.c2v = con.(map[string]interface{})["V"].(float64)
 				fptr.c2i = con.(map[string]interface{})["I"].(float64)
@@ -191,8 +195,8 @@ func DataProcessing(data []byte, command chan string) int {
 		parseJsonData(fptr, nil)
 	}
 
-	//fmt.Println("Devices:", len(IdIndex), *fptr)
-	fmt.Println(*fptr)
+	fmt.Println("Devices:", len(IdIndex), *fptr)
+	//fmt.Println(*fptr)
 	return id
 }
 
